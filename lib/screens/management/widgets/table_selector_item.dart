@@ -18,23 +18,32 @@ class TableSelectorItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = ref.watch(dataTableIndexProvider) == id;
+
     return Material(
       borderRadius: BorderRadius.circular(20),
       child: Card(
-        color: Colors.white,
+        margin: EdgeInsets.zero,
+        elevation: 2,
+        color: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color:
+                isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+            width: isSelected ? 1.4 : 1,
+          ),
+        ),
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             width: 160,
             height: 300,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              border: ref.watch(dataTableIndexProvider) != id
-                  ? null
-                  : Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

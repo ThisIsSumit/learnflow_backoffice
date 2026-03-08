@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
 import 'package:learnflow_backoffice/dto/teachers_response.dto.dart';
+import 'package:learnflow_backoffice/models/teacher.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -48,6 +50,30 @@ class TeacherDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Teacher',
+              createTemplate: const {
+                'firstName': '',
+                'lastName': '',
+                'email': '',
+                'isValidated': false,
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createTeacher(Teacher.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  teachersResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -60,6 +86,7 @@ class TeacherDataTable extends ConsumerWidget {
                       DataColumn(label: Text('Phone')),
                       DataColumn(label: Text('Validated')),
                       DataColumn(label: Text('City')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: teachers
                         .map(
@@ -81,6 +108,56 @@ class TeacherDataTable extends ConsumerWidget {
                                   ? 'Yes'
                                   : 'No')),
                               DataCell(Text(teacher.address?.city ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Teacher',
+                                  option: EntityUpdateOption(
+                                    id: teacher.id ?? '',
+                                    label: teacher.email ??
+                                        teacher.id ??
+                                        'Teacher',
+                                    values: teacher.toJson(),
+                                  ),
+                                  template: const {
+                                    'firstName': '',
+                                    'lastName': '',
+                                    'email': '',
+                                    'isValidated': false,
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateTeacher(
+                                            id, Teacher.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteTeacher(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      teachersResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

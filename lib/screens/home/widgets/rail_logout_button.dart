@@ -7,6 +7,8 @@ class RailLogoutButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return InkWell(
       borderRadius: BorderRadius.circular(30),
       onTap: () {
@@ -19,11 +21,11 @@ class RailLogoutButton extends ConsumerWidget {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            const Icon(Icons.logout, color: Colors.black54),
+            Icon(Icons.logout, color: color),
             Text(
               "Logout",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.black54,
+                    color: color,
                   ),
             ),
           ],

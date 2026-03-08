@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:learnflow_backoffice/dto/moderators_response.dto.dart';
+import 'package:learnflow_backoffice/models/moderator.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -45,6 +47,29 @@ class ModeratorDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Moderator',
+              createTemplate: const {
+                'firstName': '',
+                'lastName': '',
+                'email': '',
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createModerator(Moderator.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  moderatorsResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -53,6 +78,7 @@ class ModeratorDataTable extends ConsumerWidget {
                       DataColumn(label: Text('First Name')),
                       DataColumn(label: Text('Last Name')),
                       DataColumn(label: Text('Email')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -61,6 +87,55 @@ class ModeratorDataTable extends ConsumerWidget {
                               DataCell(Text(moderator.firstName ?? '')),
                               DataCell(Text(moderator.lastName ?? '')),
                               DataCell(Text(moderator.email ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Moderator',
+                                  option: EntityUpdateOption(
+                                    id: moderator.id ?? '',
+                                    label: moderator.email ??
+                                        moderator.id ??
+                                        'Moderator',
+                                    values: moderator.toJson(),
+                                  ),
+                                  template: const {
+                                    'firstName': '',
+                                    'lastName': '',
+                                    'email': '',
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateModerator(
+                                            id, Moderator.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteModerator(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      moderatorsResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

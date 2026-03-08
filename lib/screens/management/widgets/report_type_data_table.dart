@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:learnflow_backoffice/dto/report_types_response.dto.dart';
+import 'package:learnflow_backoffice/models/report_type.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -46,6 +48,27 @@ class ReportTypeDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Report Type',
+              createTemplate: const {
+                'name': '',
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createReportType(ReportType.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  reportTypesResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -53,6 +76,7 @@ class ReportTypeDataTable extends ConsumerWidget {
                     columns: const [
                       DataColumn(label: Text('ID')),
                       DataColumn(label: Text('Name')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -60,6 +84,52 @@ class ReportTypeDataTable extends ConsumerWidget {
                             cells: [
                               DataCell(Text(item.id ?? '')),
                               DataCell(Text(item.name ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Report Type',
+                                  option: EntityUpdateOption(
+                                    id: item.id ?? '',
+                                    label:
+                                        item.name ?? item.id ?? 'Report Type',
+                                    values: item.toJson(),
+                                  ),
+                                  template: const {
+                                    'name': '',
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateReportType(
+                                            id, ReportType.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteReportType(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      reportTypesResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

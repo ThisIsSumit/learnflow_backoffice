@@ -2,6 +2,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hooks_riverpod/legacy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:learnflow_backoffice/screens/home/home_screen.dart';
 import 'package:learnflow_backoffice/screens/login/login_screen.dart';
@@ -11,6 +12,8 @@ final isAuthenticatedProvider = FutureProvider<bool>((ref) async {
   final apiToken = await ref.watch(secureStorageProvider).getApiToken();
   return apiToken != null;
 });
+
+final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
 
 void main() {
   initializeDateFormatting("en_US", null).then((_) {
@@ -23,6 +26,7 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp(
         debugShowCheckedModeBanner: false,
         // Made for FlexColorScheme version 7.0.0. Make sure you
@@ -110,7 +114,7 @@ class MyApp extends ConsumerWidget {
         ),
         // If you do not have a themeMode switch, uncomment this line
         // to let the device system mode control the theme mode:
-        themeMode: ThemeMode.light,
+        themeMode: themeMode,
         home: ref.watch(isAuthenticatedProvider).when(
               data: (isAuthenticated) {
                 if (isAuthenticated) return const HomeScreen();

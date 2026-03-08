@@ -12,8 +12,10 @@ class MyNavigationRail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return NavigationRail(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       leading: const Padding(
         padding: EdgeInsets.only(top: 10, bottom: 30),
         child: Image(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:learnflow_backoffice/dto/evaluations_response.dto.dart';
+import 'package:learnflow_backoffice/models/evaluation.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -46,6 +48,28 @@ class EvaluationDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Evaluation',
+              createTemplate: const {
+                'description': '',
+                'isValidated': false,
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createEvaluation(Evaluation.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  evaluationsResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -55,6 +79,7 @@ class EvaluationDataTable extends ConsumerWidget {
                       DataColumn(label: Text('Student')),
                       DataColumn(label: Text('Teacher')),
                       DataColumn(label: Text('Note')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -68,6 +93,52 @@ class EvaluationDataTable extends ConsumerWidget {
                                   '${evaluation.teacher?.firstName ?? ''} ${evaluation.teacher?.lastName ?? ''}'
                                       .trim())),
                               DataCell(Text(evaluation.note ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Evaluation',
+                                  option: EntityUpdateOption(
+                                    id: evaluation.id ?? '',
+                                    label: evaluation.id ?? 'Evaluation',
+                                    values: evaluation.toJson(),
+                                  ),
+                                  template: const {
+                                    'description': '',
+                                    'isValidated': false,
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateEvaluation(
+                                            id, Evaluation.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteEvaluation(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      evaluationsResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
 import 'package:learnflow_backoffice/dto/reports_response.dto.dart';
+import 'package:learnflow_backoffice/models/report.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -45,6 +47,27 @@ class ReportDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Report',
+              createTemplate: const {
+                'description': '',
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createReport(Report.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  reportsResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -56,6 +79,7 @@ class ReportDataTable extends ConsumerWidget {
                       DataColumn(label: Text('Student')),
                       DataColumn(label: Text('Teacher')),
                       DataColumn(label: Text('Reason')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -69,6 +93,51 @@ class ReportDataTable extends ConsumerWidget {
                               DataCell(Text(report.student?.email ?? '')),
                               DataCell(Text(report.teacher?.email ?? '')),
                               DataCell(Text(report.reason?.toString() ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Report',
+                                  option: EntityUpdateOption(
+                                    id: report.id ?? '',
+                                    label: report.id ?? 'Report',
+                                    values: report.toJson(),
+                                  ),
+                                  template: const {
+                                    'description': '',
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateReport(
+                                            id, Report.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteReport(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      reportsResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

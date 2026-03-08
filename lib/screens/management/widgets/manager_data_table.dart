@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:learnflow_backoffice/dto/managers_response.dto.dart';
+import 'package:learnflow_backoffice/models/manager.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -44,6 +46,29 @@ class ManagerDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Manager',
+              createTemplate: const {
+                'firstName': '',
+                'lastName': '',
+                'email': '',
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createManager(Manager.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  managersResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -52,6 +77,7 @@ class ManagerDataTable extends ConsumerWidget {
                       DataColumn(label: Text('First Name')),
                       DataColumn(label: Text('Last Name')),
                       DataColumn(label: Text('Email')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -60,6 +86,55 @@ class ManagerDataTable extends ConsumerWidget {
                               DataCell(Text(manager.firstName ?? '')),
                               DataCell(Text(manager.lastName ?? '')),
                               DataCell(Text(manager.email ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Manager',
+                                  option: EntityUpdateOption(
+                                    id: manager.id ?? '',
+                                    label: manager.email ??
+                                        manager.id ??
+                                        'Manager',
+                                    values: manager.toJson(),
+                                  ),
+                                  template: const {
+                                    'firstName': '',
+                                    'lastName': '',
+                                    'email': '',
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateManager(
+                                            id, Manager.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteManager(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      managersResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

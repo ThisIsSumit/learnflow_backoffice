@@ -190,6 +190,22 @@ class ApiService {
     return Document.fromJson(_asMap(response.data));
   }
 
+  Future<Document> createDocument(Document document) async {
+    final response = await _dio.post('/documents/', data: document.toJson());
+    return Document.fromJson(_asMap(response.data));
+  }
+
+  Future<List<Document>> updateDocument(String _id, Document document) async {
+    final response =
+        await _dio.patch('/documents/$_id/', data: document.toJson());
+    return _asListOfMaps(response.data).map(Document.fromJson).toList();
+  }
+
+  Future<bool> deleteDocument(String _id) async {
+    final response = await _dio.delete('/documents/$_id');
+    return _asBool(response.data);
+  }
+
   Future<List<Chat>> updateChat(String _id, Chat chat) async {
     final response = await _dio.patch('/chats/$_id/', data: chat.toJson());
     return _asListOfMaps(response.data).map(Chat.fromJson).toList();
@@ -226,6 +242,11 @@ class ApiService {
     return _asListOfMaps(response.data).map(Evaluation.fromJson).toList();
   }
 
+  Future<bool> deleteEvaluation(String _id) async {
+    final response = await _dio.delete('/evaluations/$_id');
+    return _asBool(response.data);
+  }
+
   Future<JustificativesResponse> getJustificatives(
       {int? page, int? limit, String? search}) async {
     final response = await _dio.get(
@@ -259,6 +280,11 @@ class ApiService {
     return _asListOfMaps(response.data).map(Justificative.fromJson).toList();
   }
 
+  Future<bool> deleteJustificative(String _id) async {
+    final response = await _dio.delete('/justificatives/$_id');
+    return _asBool(response.data);
+  }
+
   Future<ManagersResponse> getManagers(
       {int? page, int? limit, String? search}) async {
     final response = await _dio.get(
@@ -286,6 +312,11 @@ class ApiService {
     final response =
         await _dio.patch('/managers/$_id/', data: manager.toJson());
     return _asListOfMaps(response.data).map(Manager.fromJson).toList();
+  }
+
+  Future<bool> deleteManager(String _id) async {
+    final response = await _dio.delete('/managers/$_id');
+    return _asBool(response.data);
   }
 
   Future<ModeratorsResponse> getModerators(
@@ -318,6 +349,11 @@ class ApiService {
     return _asListOfMaps(response.data).map(Moderator.fromJson).toList();
   }
 
+  Future<bool> deleteModerator(String _id) async {
+    final response = await _dio.delete('/moderators/$_id');
+    return _asBool(response.data);
+  }
+
   Future<PaymentsResponse> getPayments(
       {int? page, int? limit, String? search}) async {
     final response = await _dio.get(
@@ -347,6 +383,11 @@ class ApiService {
     return _asListOfMaps(response.data).map(Payment.fromJson).toList();
   }
 
+  Future<bool> deletePayment(String _id) async {
+    final response = await _dio.delete('/payments/$_id');
+    return _asBool(response.data);
+  }
+
   Future<RatingsResponse> getRatings(
       {int? page, int? limit, String? search}) async {
     final response = await _dio.get(
@@ -373,6 +414,11 @@ class ApiService {
   Future<List<Rating>> updateRating(String _id, Rating rating) async {
     final response = await _dio.patch('/ratings/$_id/', data: rating.toJson());
     return _asListOfMaps(response.data).map(Rating.fromJson).toList();
+  }
+
+  Future<bool> deleteRating(String _id) async {
+    final response = await _dio.delete('/ratings/$_id');
+    return _asBool(response.data);
   }
 
   Future<ReportTypesResponse> getReportTypes(
@@ -406,6 +452,11 @@ class ApiService {
     return _asListOfMaps(response.data).map(ReportType.fromJson).toList();
   }
 
+  Future<bool> deleteReportType(String _id) async {
+    final response = await _dio.delete('/report-types/$_id');
+    return _asBool(response.data);
+  }
+
   Future<ReportsResponse> getReports(
       {int? page, int? limit, String? search}) async {
     final response = await _dio.get(
@@ -432,6 +483,11 @@ class ApiService {
   Future<List<Report>> updateReport(String _id, Report report) async {
     final response = await _dio.patch('/reports/$_id/', data: report.toJson());
     return _asListOfMaps(response.data).map(Report.fromJson).toList();
+  }
+
+  Future<bool> deleteReport(String _id) async {
+    final response = await _dio.delete('/reports/$_id');
+    return _asBool(response.data);
   }
 
   Future<SchoolSubjectTaughtsResponse> getSchoolSubjectTaughts(
@@ -473,6 +529,11 @@ class ApiService {
         .toList();
   }
 
+  Future<bool> deleteSchoolSubjectTaught(String _id) async {
+    final response = await _dio.delete('/school-subjects-taught/$_id');
+    return _asBool(response.data);
+  }
+
   Future<SchoolSubjectsResponse> getSchoolSubjects(
       {int? page, int? limit, String? search}) async {
     final response = await _dio.get(
@@ -504,6 +565,11 @@ class ApiService {
     final response = await _dio.patch('/school-subjects/$_id/',
         data: schoolSubject.toJson());
     return _asListOfMaps(response.data).map(SchoolSubject.fromJson).toList();
+  }
+
+  Future<bool> deleteSchoolSubject(String _id) async {
+    final response = await _dio.delete('/school-subjects/$_id');
+    return _asBool(response.data);
   }
 
   Future<StudentsResponse> getStudents(
@@ -575,6 +641,11 @@ class ApiService {
     return _asListOfMaps(response.data)
         .map(TeacherValidation.fromJson)
         .toList();
+  }
+
+  Future<bool> deleteTeacherValidation(String _id) async {
+    final response = await _dio.delete('/teacher-validations/$_id');
+    return _asBool(response.data);
   }
 
   Future<TeachersResponse> getTeachers(

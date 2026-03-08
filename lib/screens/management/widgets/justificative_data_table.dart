@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
 import 'package:learnflow_backoffice/dto/justificatives_response.dto.dart';
+import 'package:learnflow_backoffice/models/justificative.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -49,6 +51,28 @@ class JustificativeDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Justificative',
+              createTemplate: const {
+                'description': '',
+                'isAccepted': false,
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createJustificative(Justificative.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  justificativesResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -58,6 +82,7 @@ class JustificativeDataTable extends ConsumerWidget {
                       DataColumn(label: Text('End')),
                       DataColumn(label: Text('Comment')),
                       DataColumn(label: Text('Upload URL')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -72,6 +97,52 @@ class JustificativeDataTable extends ConsumerWidget {
                                   : formatter.format(item.endDate!.toLocal()))),
                               DataCell(Text(item.comment ?? '')),
                               DataCell(Text(item.uploadUrl ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Justificative',
+                                  option: EntityUpdateOption(
+                                    id: item.id ?? '',
+                                    label: item.id ?? 'Justificative',
+                                    values: item.toJson(),
+                                  ),
+                                  template: const {
+                                    'description': '',
+                                    'isAccepted': false,
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateJustificative(id,
+                                            Justificative.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteJustificative(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      justificativesResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

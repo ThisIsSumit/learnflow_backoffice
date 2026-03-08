@@ -32,28 +32,31 @@ class _LogoutAlertDialogState extends ConsumerState<LogoutAlertDialog> {
         TextButton(
           child: const Text('Yes'),
           onPressed: () async {
+            var apiLogoutFailed = false;
             try {
               final apiToken =
                   await ref.read(secureStorageProvider).getApiToken();
-              await ref.read(apiServiceProvider(apiToken)).logout();
+              if (apiToken != null && apiToken.isNotEmpty) {
+                await ref.read(apiServiceProvider(apiToken)).logout();
+              }
+            } catch (_) {
+              apiLogoutFailed = true;
+            } finally {
               await ref.read(secureStorageProvider).deleteJwt();
               if (!mounted) return;
-              Navigator.of(context).pop();
-              Navigator.of(context).pushReplacement(
+              Navigator.of(context, rootNavigator: true).pop();
+              Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (context) => const LoginScreen(),
                 ),
+                (route) => false,
               );
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('You have been logged out.'),
-                ),
-              );
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   content: Text(
-                    'Unable to log out. Please try again.',
+                    apiLogoutFailed
+                        ? 'Logged out locally. Server logout failed.'
+                        : 'You have been logged out.',
                   ),
                 ),
               );

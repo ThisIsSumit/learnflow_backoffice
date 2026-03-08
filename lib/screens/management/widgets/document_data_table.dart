@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:learnflow_backoffice/dto/documents_response.dto.dart';
+import 'package:learnflow_backoffice/models/document.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -45,6 +47,28 @@ class DocumentDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Document',
+              createTemplate: const {
+                'name': '',
+                'description': '',
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createDocument(Document.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  documentsResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -53,6 +77,7 @@ class DocumentDataTable extends ConsumerWidget {
                       DataColumn(label: Text('ID')),
                       DataColumn(label: Text('Upload URL')),
                       DataColumn(label: Text('Type')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -61,6 +86,52 @@ class DocumentDataTable extends ConsumerWidget {
                               DataCell(Text(document.id ?? '')),
                               DataCell(Text(document.uploadUrl ?? '')),
                               DataCell(Text(document.documentType?.name ?? '')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Document',
+                                  option: EntityUpdateOption(
+                                    id: document.id ?? '',
+                                    label: document.id ?? 'Document',
+                                    values: document.toJson(),
+                                  ),
+                                  template: const {
+                                    'name': '',
+                                    'description': '',
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updateDocument(
+                                            id, Document.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deleteDocument(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      documentsResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )

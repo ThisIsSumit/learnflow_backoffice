@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
 import 'package:learnflow_backoffice/dto/payments_response.dto.dart';
+import 'package:learnflow_backoffice/models/payment.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/entity_crud_panel.dart';
 import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
@@ -46,6 +48,29 @@ class PaymentDataTable extends ConsumerWidget {
 
         return Column(
           children: [
+            EntityCrudPanel(
+              entityLabel: 'Payment',
+              createTemplate: const {
+                'amount': '0',
+                'date': '',
+                'isDue': false,
+              },
+              onCreate: (json) async {
+                final apiToken =
+                    await ref.read(secureStorageProvider).getApiToken();
+                await ref
+                    .read(apiServiceProvider(apiToken))
+                    .createPayment(Payment.fromJson(json));
+              },
+              onCompleted: () {
+                ref.invalidate(
+                  paymentsResponseProvider(
+                    (page: page, pageSize: pageSize, search: search),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 children: [
@@ -54,6 +79,7 @@ class PaymentDataTable extends ConsumerWidget {
                       DataColumn(label: Text('Amount')),
                       DataColumn(label: Text('Date')),
                       DataColumn(label: Text('Due')),
+                      DataColumn(label: Text('Actions')),
                     ],
                     rows: items
                         .map(
@@ -65,6 +91,53 @@ class PaymentDataTable extends ConsumerWidget {
                                   : formatter.format(payment.date!.toLocal()))),
                               DataCell(Text(
                                   (payment.isDue ?? false) ? 'Yes' : 'No')),
+                              DataCell(
+                                EntityRowActionsMenu(
+                                  entityLabel: 'Payment',
+                                  option: EntityUpdateOption(
+                                    id: payment.id ?? '',
+                                    label: payment.id ?? 'Payment',
+                                    values: payment.toJson(),
+                                  ),
+                                  template: const {
+                                    'amount': '0',
+                                    'date': '',
+                                    'isDue': false,
+                                  },
+                                  onUpdate: (id, json) async {
+                                    final payload = <String, dynamic>{
+                                      ...json,
+                                      '_id': id
+                                    };
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .updatePayment(
+                                            id, Payment.fromJson(payload));
+                                  },
+                                  onDelete: (id) async {
+                                    final apiToken = await ref
+                                        .read(secureStorageProvider)
+                                        .getApiToken();
+                                    await ref
+                                        .read(apiServiceProvider(apiToken))
+                                        .deletePayment(id);
+                                  },
+                                  onCompleted: () {
+                                    ref.invalidate(
+                                      paymentsResponseProvider(
+                                        (
+                                          page: page,
+                                          pageSize: pageSize,
+                                          search: search
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         )
