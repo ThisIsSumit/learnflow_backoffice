@@ -30,26 +30,21 @@ class MyNavigationRail extends ConsumerWidget {
         ref.watch(railIndexProvider.notifier).state = value;
       },
       destinations: const <NavigationRailDestination>[
-        // NavigationRailDestination(
-        //   icon: Icon(Icons.dashboard_outlined),
-        //   selectedIcon: Icon(Icons.dashboard),
-        //   label: Text('Dashboard'),
-        // ),
+        NavigationRailDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: Text('Dashboard'),
+        ),
         NavigationRailDestination(
           icon: Icon(Icons.table_view),
           selectedIcon: Icon(Icons.table_view_outlined),
           label: Text('Management'),
         ),
         NavigationRailDestination(
-          icon: SizedBox.shrink(),
-          selectedIcon: SizedBox.shrink(),
-          label: SizedBox.shrink(),
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+          label: Text('Settings'),
         ),
-        // NavigationRailDestination(
-        //   icon: Icon(Icons.settings_outlined),
-        //   selectedIcon: Icon(Icons.settings),
-        //   label: Text('Settings'),
-        // ),
       ],
       trailing: const Expanded(
         child: Align(

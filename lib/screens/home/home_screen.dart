@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learnflow_backoffice/screens/dashboard/dashboard_screen.dart';
 import 'package:learnflow_backoffice/screens/home/widgets/navigation_rail.dart.dart';
 import 'package:learnflow_backoffice/screens/management/management_screen.dart';
+import 'package:learnflow_backoffice/screens/settings/settings_screen.dart';
 
 class HomeScreen extends HookConsumerWidget {
   const HomeScreen({super.key});
 
   static const subScreens = [
+    DashboardScreen(),
     ManagementScreen(),
-    ManagementScreen(),
+    SettingsScreen(),
   ];
 
   @override

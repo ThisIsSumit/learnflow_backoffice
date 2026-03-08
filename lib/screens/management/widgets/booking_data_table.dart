@@ -1,246 +1,127 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:learnflow_backoffice/models/booking.dart';
+import 'package:hooks_riverpod/legacy.dart';
+import 'package:intl/intl.dart';
+import 'package:learnflow_backoffice/dto/bookings_response.dto.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
-import 'package:pluto_grid/pluto_grid.dart';
 
-final bookingsProvider = FutureProvider<List<Booking>>((ref) async {
+final bookingsPageProvider = StateProvider.autoDispose<int>((ref) => 1);
+final bookingsPageSizeProvider = StateProvider.autoDispose<int>((ref) => 10);
+final bookingsSearchProvider = StateProvider.autoDispose<String>((ref) => '');
+
+final bookingsResponseProvider = FutureProvider.autoDispose
+    .family<BookingsResponse, ({int page, int pageSize, String search})>(
+        (ref, params) async {
   final apiToken = await ref.watch(secureStorageProvider).getApiToken();
   final apiService = ref.read(apiServiceProvider(apiToken));
-  final response = await apiService.getBookings();
-  return response.data ?? <Booking>[];
+  return apiService.getBookings(
+    page: params.page,
+    limit: params.pageSize,
+    search: params.search.isEmpty ? null : params.search,
+  );
 });
 
-class BookingDataTable extends ConsumerStatefulWidget {
+class BookingDataTable extends ConsumerWidget {
   const BookingDataTable({super.key});
 
   @override
-  ConsumerState<BookingDataTable> createState() => _BookingDataTableState();
-}
-
-class _BookingDataTableState extends ConsumerState<BookingDataTable> {
-  late final PlutoGridStateManager stateManager;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<PlutoColumn> columns = <PlutoColumn>[
-      PlutoColumn(
-        title: 'Start',
-        field: 'startDate',
-        type: PlutoColumnType.date(),
-      ),
-      PlutoColumn(
-        title: 'End',
-        field: 'endDate',
-        type: PlutoColumnType.date(),
-      ),
-      PlutoColumn(
-        title: 'Accepted',
-        field: 'isAccepted',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Subject',
-        field: 'schoolSubject',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Student',
-        field: 'student',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Teacher',
-        field: 'teacher',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Paiement',
-        field: 'payment',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'School Level',
-        field: 'schoolLevel',
-        type: PlutoColumnType.text(),
-      ),
-    ];
-
-    return Scaffold(
-      body: Container(
-        padding: const EdgeInsets.all(15),
-        child: ref.watch(bookingsProvider).when(
-          data: (bookings) {
-            return PlutoGrid(
-              columns: columns,
-              rows: bookings.map((booking) {
-                return PlutoRow(
-                  cells: {
-                    '_id': PlutoCell(value: booking.id ?? ""),
-                    'startDate': PlutoCell(value: booking.startDate),
-                    'endDate': PlutoCell(value: booking.endDate),
-                    'isAccepted': PlutoCell(value: booking.isAccepted ?? ""),
-                    'schoolSubject': PlutoCell(
-                      value: booking.schoolSubject?.name ?? "",
-                    ),
-                    'student': PlutoCell(
-                      value:
-                          '${booking.student?.firstName ?? ''} ${booking.student?.lastName ?? ''}'
-                              .trim(),
-                    ),
-                    'teacher': PlutoCell(
-                      value:
-                          '${booking.teacher?.firstName ?? ''} ${booking.teacher?.lastName ?? ''}'
-                              .trim(),
-                    ),
-                    'payment': PlutoCell(value: booking.payment?.amount ?? ""),
-                    'schoolLevel': PlutoCell(
-                      value: booking.student?.schoolLevel ?? "",
-                    ),
-                  },
-                );
-              }).toList(),
-              onLoaded: (PlutoGridOnLoadedEvent event) {
-                stateManager = event.stateManager;
-                stateManager.setShowColumnFilter(true);
-              },
-              onChanged: (PlutoGridOnChangedEvent event) async {
-                try {
-                  final cell =
-                      event.row.cells.map<String, dynamic>((key, cell) {
-                    final json = MapEntry(key, cell.value);
-                    return json;
-                  });
-                  final booking = Booking.fromJson(cell);
-                  final apiToken =
-                      await ref.read(secureStorageProvider).getApiToken();
-                  print(booking.id);
-                  final response = await ref
-                      .read(apiServiceProvider(apiToken))
-                      .updateBooking(
-                        booking.id!,
-                        booking,
-                      );
-                  print(response);
-                  print("Success update");
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Changes were not saved"),
-                    ),
-                  );
-                }
-              },
-              createHeader: (stateManager) {
-                return _Header(stateManager: stateManager);
-              },
-            );
-          },
-          error: (error, stackTrace) {
-            return const Center(
-              child: Text('Error while loading data'),
-            );
-          },
-          loading: () {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          },
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final page = ref.watch(bookingsPageProvider);
+    final pageSize = ref.watch(bookingsPageSizeProvider);
+    final search = ref.watch(bookingsSearchProvider);
+    final responseAsync = ref.watch(
+      bookingsResponseProvider(
+          (page: page, pageSize: pageSize, search: search)),
     );
-  }
-}
 
-class _Header extends ConsumerStatefulWidget {
-  const _Header({
-    required this.stateManager,
-    Key? key,
-  }) : super(key: key);
-  final PlutoGridStateManager stateManager;
+    return responseAsync.when(
+      data: (response) {
+        final bookings = response.data ?? const [];
+        final meta = response.meta;
+        final currentPage = meta?.page ?? page;
+        final totalPages = meta?.totalPages == null || meta!.totalPages! < 1
+            ? 1
+            : meta.totalPages!;
+        final formatter = DateFormat('yyyy-MM-dd HH:mm');
 
-  @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _HeaderState();
-}
-
-class _HeaderState extends ConsumerState<_Header> {
-  int addCount = 1;
-  int addedCount = 0;
-  PlutoGridSelectingMode gridSelectingMode = PlutoGridSelectingMode.row;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      widget.stateManager.setSelectingMode(gridSelectingMode);
-    });
-  }
-
-  void handleAddRows() {
-    final newRows = widget.stateManager.getNewRows(count: addCount);
-    widget.stateManager.appendRows(newRows);
-    widget.stateManager.setCurrentCell(
-      newRows.first.cells.entries.first.value,
-      widget.stateManager.refRows.length - 1,
-    );
-    widget.stateManager.moveScrollByRow(
-      PlutoMoveDirection.down,
-      widget.stateManager.refRows.length - 2,
-    );
-    widget.stateManager.setKeepFocus(true);
-  }
-
-  void handleRemoveCurrentRowButton() async {
-    try {
-      final json = widget.stateManager.currentRow!.cells
-          .map<String, dynamic>((key, cell) {
-        final json = MapEntry(key, cell.value);
-        return json;
-      });
-      final booking = Booking.fromJson(json);
-      final apiToken = await ref.read(secureStorageProvider).getApiToken();
-      print(booking.id);
-      widget.stateManager.removeCurrentRow();
-      final response =
-          await ref.read(apiServiceProvider(apiToken)).deleteBooking(
-                booking.id!,
-              );
-      print(response);
-      print("Success update");
-    } catch (e) {
-      print(e);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Changes were not saved"),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Wrap(
-          spacing: 10,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        return Column(
           children: [
-            // ElevatedButton(
-            //   onPressed: handleAddRows,
-            //   child: const Text('Add a student'),
-            // ),
-            ElevatedButton(
-              onPressed: handleRemoveCurrentRowButton,
-              child: const Text("Delete booking"),
+            Expanded(
+              child: ListView(
+                children: [
+                  DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Start')),
+                      DataColumn(label: Text('End')),
+                      DataColumn(label: Text('Accepted')),
+                      DataColumn(label: Text('Subject')),
+                      DataColumn(label: Text('Student')),
+                      DataColumn(label: Text('Teacher')),
+                      DataColumn(label: Text('Payment')),
+                    ],
+                    rows: bookings
+                        .map(
+                          (booking) => DataRow(
+                            cells: [
+                              DataCell(Text(booking.startDate == null
+                                  ? ''
+                                  : formatter
+                                      .format(booking.startDate!.toLocal()))),
+                              DataCell(Text(booking.endDate == null
+                                  ? ''
+                                  : formatter
+                                      .format(booking.endDate!.toLocal()))),
+                              DataCell(Text((booking.isAccepted ?? false)
+                                  ? 'Yes'
+                                  : 'No')),
+                              DataCell(Text(booking.schoolSubject?.name ?? '')),
+                              DataCell(Text(
+                                  '${booking.student?.firstName ?? ''} ${booking.student?.lastName ?? ''}'
+                                      .trim())),
+                              DataCell(Text(
+                                  '${booking.teacher?.firstName ?? ''} ${booking.teacher?.lastName ?? ''}'
+                                      .trim())),
+                              DataCell(Text(booking.payment?.amount ?? '')),
+                            ],
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+            ManagementPaginationControls(
+              page: currentPage,
+              totalPages: totalPages,
+              totalItems: meta?.total,
+              pageSize: pageSize,
+              searchText: search,
+              onPageSizeChanged: (value) {
+                ref.read(bookingsPageSizeProvider.notifier).state = value;
+                ref.read(bookingsPageProvider.notifier).state = 1;
+              },
+              onSearchChanged: (value) {
+                ref.read(bookingsSearchProvider.notifier).state = value.trim();
+                ref.read(bookingsPageProvider.notifier).state = 1;
+              },
+              onPrevious: currentPage > 1
+                  ? () => ref.read(bookingsPageProvider.notifier).state =
+                      currentPage - 1
+                  : null,
+              onNext: currentPage < totalPages
+                  ? () => ref.read(bookingsPageProvider.notifier).state =
+                      currentPage + 1
+                  : null,
             ),
           ],
-        ),
+        );
+      },
+      error: (error, stackTrace) => const Center(
+        child: Text('Error while loading bookings'),
       ),
+      loading: () => const Center(child: CircularProgressIndicator()),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learnflow_backoffice/dto/bookings_response.dto.dart';
 import 'package:learnflow_backoffice/dto/chats_response.dto.dart';
+import 'package:learnflow_backoffice/dto/documents_response.dto.dart';
 import 'package:learnflow_backoffice/dto/evaluations_response.dto.dart';
 import 'package:learnflow_backoffice/dto/justificatives_response.dto.dart';
 import 'package:learnflow_backoffice/dto/jwt_response.dto.dart';
@@ -21,6 +22,7 @@ import 'package:learnflow_backoffice/dto/teacher_validations_response.dto.dart';
 import 'package:learnflow_backoffice/dto/teachers_response.dto.dart';
 import 'package:learnflow_backoffice/models/booking.dart';
 import 'package:learnflow_backoffice/models/chat.dart';
+import 'package:learnflow_backoffice/models/document.dart';
 import 'package:learnflow_backoffice/models/evaluation.dart';
 import 'package:learnflow_backoffice/models/justificative.dart';
 import 'package:learnflow_backoffice/models/manager.dart';
@@ -96,7 +98,7 @@ class ApiService {
   }
 
   Future<dynamic> healthCheck() async {
-    final response = await _dio.get('/');
+    final response = await _dio.get('/health');
     return response.data;
   }
 
@@ -113,8 +115,16 @@ class ApiService {
     await _dio.post('/auth/logout');
   }
 
-  Future<BookingsResponse> getBookings() async {
-    final response = await _dio.get('/bookings');
+  Future<BookingsResponse> getBookings(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/bookings',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return BookingsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -139,8 +149,16 @@ class ApiService {
     return _asBool(response.data);
   }
 
-  Future<ChatsResponse> getChats() async {
-    final response = await _dio.get('/chats');
+  Future<ChatsResponse> getChats(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/chats',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return ChatsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -154,13 +172,39 @@ class ApiService {
     return Chat.fromJson(_asMap(response.data));
   }
 
+  Future<DocumentsResponse> getDocuments(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/documents',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
+    return DocumentsResponse.fromJson(_asEnvelopeMap(response.data));
+  }
+
+  Future<Document> getDocument(String _id) async {
+    final response = await _dio.get('/documents/$_id');
+    return Document.fromJson(_asMap(response.data));
+  }
+
   Future<List<Chat>> updateChat(String _id, Chat chat) async {
     final response = await _dio.patch('/chats/$_id/', data: chat.toJson());
     return _asListOfMaps(response.data).map(Chat.fromJson).toList();
   }
 
-  Future<EvaluationsResponse> getEvaluations() async {
-    final response = await _dio.get('/evaluations');
+  Future<EvaluationsResponse> getEvaluations(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/evaluations',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return EvaluationsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -182,8 +226,16 @@ class ApiService {
     return _asListOfMaps(response.data).map(Evaluation.fromJson).toList();
   }
 
-  Future<JustificativesResponse> getJustificatives() async {
-    final response = await _dio.get('/justificatives');
+  Future<JustificativesResponse> getJustificatives(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/justificatives',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return JustificativesResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -207,8 +259,16 @@ class ApiService {
     return _asListOfMaps(response.data).map(Justificative.fromJson).toList();
   }
 
-  Future<ManagersResponse> getManagers() async {
-    final response = await _dio.get('/managers');
+  Future<ManagersResponse> getManagers(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/managers',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return ManagersResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -228,8 +288,16 @@ class ApiService {
     return _asListOfMaps(response.data).map(Manager.fromJson).toList();
   }
 
-  Future<ModeratorsResponse> getModerators() async {
-    final response = await _dio.get('/moderators');
+  Future<ModeratorsResponse> getModerators(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/moderators',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return ModeratorsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -250,8 +318,16 @@ class ApiService {
     return _asListOfMaps(response.data).map(Moderator.fromJson).toList();
   }
 
-  Future<PaymentsResponse> getPayments() async {
-    final response = await _dio.get('/payments');
+  Future<PaymentsResponse> getPayments(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/payments',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return PaymentsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -271,8 +347,16 @@ class ApiService {
     return _asListOfMaps(response.data).map(Payment.fromJson).toList();
   }
 
-  Future<RatingsResponse> getRatings() async {
-    final response = await _dio.get('/ratings');
+  Future<RatingsResponse> getRatings(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/ratings',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return RatingsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -291,31 +375,47 @@ class ApiService {
     return _asListOfMaps(response.data).map(Rating.fromJson).toList();
   }
 
-  Future<ReportTypesResponse> getReportTypes() async {
-    final response = await _dio.get('/reportTypes');
+  Future<ReportTypesResponse> getReportTypes(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/report-types',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return ReportTypesResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
   Future<ReportType> getReportType(String _id) async {
-    final response = await _dio.get('/reportTypes/$_id');
+    final response = await _dio.get('/report-types/$_id');
     return ReportType.fromJson(_asMap(response.data));
   }
 
   Future<ReportType> createReportType(ReportType reportType) async {
     final response =
-        await _dio.post('/reportTypes/', data: reportType.toJson());
+        await _dio.post('/report-types/', data: reportType.toJson());
     return ReportType.fromJson(_asMap(response.data));
   }
 
   Future<List<ReportType>> updateReportType(
       String _id, ReportType reportType) async {
     final response =
-        await _dio.patch('/reportTypes/$_id/', data: reportType.toJson());
+        await _dio.patch('/report-types/$_id/', data: reportType.toJson());
     return _asListOfMaps(response.data).map(ReportType.fromJson).toList();
   }
 
-  Future<ReportsResponse> getReports() async {
-    final response = await _dio.get('/reports');
+  Future<ReportsResponse> getReports(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/reports',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return ReportsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -334,13 +434,21 @@ class ApiService {
     return _asListOfMaps(response.data).map(Report.fromJson).toList();
   }
 
-  Future<SchoolSubjectTaughtsResponse> getSchoolSubjectTaughts() async {
-    final response = await _dio.get('/school_subjects_teached');
+  Future<SchoolSubjectTaughtsResponse> getSchoolSubjectTaughts(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/school-subjects-taught',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return SchoolSubjectTaughtsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
   Future<SchoolSubjectTaught> getSchoolSubjectTaught(String _id) async {
-    final response = await _dio.get('/school_subjects_teached/$_id');
+    final response = await _dio.get('/school-subjects-taught/$_id');
     return SchoolSubjectTaught.fromJson(_asMap(response.data));
   }
 
@@ -348,7 +456,7 @@ class ApiService {
     SchoolSubjectTaught schoolSubjectsTeached,
   ) async {
     final response = await _dio.post(
-      '/school_subjects_teached/',
+      '/school-subjects-taught/',
       data: schoolSubjectsTeached.toJson(),
     );
     return SchoolSubjectTaught.fromJson(_asMap(response.data));
@@ -358,26 +466,34 @@ class ApiService {
     String _id,
     SchoolSubjectTaught report,
   ) async {
-    final response = await _dio.patch('/school_subjects_teached/$_id/',
+    final response = await _dio.patch('/school-subjects-taught/$_id/',
         data: report.toJson());
     return _asListOfMaps(response.data)
         .map(SchoolSubjectTaught.fromJson)
         .toList();
   }
 
-  Future<SchoolSubjectsResponse> getSchoolSubjects() async {
-    final response = await _dio.get('/school_subjects');
+  Future<SchoolSubjectsResponse> getSchoolSubjects(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/school-subjects',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return SchoolSubjectsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
   Future<SchoolSubject> getSchoolSubject(String _id) async {
-    final response = await _dio.get('/school_subjects/$_id');
+    final response = await _dio.get('/school-subjects/$_id');
     return SchoolSubject.fromJson(_asMap(response.data));
   }
 
   Future<SchoolSubject> createSchoolSubject(SchoolSubject schoolSubject) async {
     final response =
-        await _dio.post('/school_subjects/', data: schoolSubject.toJson());
+        await _dio.post('/school-subjects/', data: schoolSubject.toJson());
     return SchoolSubject.fromJson(_asMap(response.data));
   }
 
@@ -385,13 +501,21 @@ class ApiService {
     String _id,
     SchoolSubject schoolSubject,
   ) async {
-    final response = await _dio.patch('/school_subjects/$_id/',
+    final response = await _dio.patch('/school-subjects/$_id/',
         data: schoolSubject.toJson());
     return _asListOfMaps(response.data).map(SchoolSubject.fromJson).toList();
   }
 
-  Future<StudentsResponse> getStudents() async {
-    final response = await _dio.get('/students');
+  Future<StudentsResponse> getStudents(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/students',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return StudentsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
@@ -416,20 +540,29 @@ class ApiService {
     return _asBool(response.data);
   }
 
-  Future<TeacherValidationsResponse> getTeacherValidations() async {
-    final response = await _dio.get('/teachers');
+  Future<TeacherValidationsResponse> getTeacherValidations(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/teacher-validations',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return TeacherValidationsResponse.fromJson(_asEnvelopeMap(response.data));
   }
 
   Future<TeacherValidation> getTeacherValidation(String _id) async {
-    final response = await _dio.get('/teachers/$_id');
+    final response = await _dio.get('/teacher-validations/$_id');
     return TeacherValidation.fromJson(_asMap(response.data));
   }
 
   Future<TeacherValidation> createTeacherValidation(
     TeacherValidation teacher,
   ) async {
-    final response = await _dio.post('/teachers/', data: teacher.toJson());
+    final response =
+        await _dio.post('/teacher-validations/', data: teacher.toJson());
     return TeacherValidation.fromJson(_asMap(response.data));
   }
 
@@ -438,14 +571,22 @@ class ApiService {
     TeacherValidation teacher,
   ) async {
     final response =
-        await _dio.patch('/teachers/$_id/', data: teacher.toJson());
+        await _dio.patch('/teacher-validations/$_id/', data: teacher.toJson());
     return _asListOfMaps(response.data)
         .map(TeacherValidation.fromJson)
         .toList();
   }
 
-  Future<TeachersResponse> getTeachers() async {
-    final response = await _dio.get('/teachers');
+  Future<TeachersResponse> getTeachers(
+      {int? page, int? limit, String? search}) async {
+    final response = await _dio.get(
+      '/teachers',
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
     return TeachersResponse.fromJson(_asEnvelopeMap(response.data));
   }
 

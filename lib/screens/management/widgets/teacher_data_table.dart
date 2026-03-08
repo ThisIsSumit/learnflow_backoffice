@@ -1,257 +1,124 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:learnflow_backoffice/models/teacher.dart';
+import 'package:hooks_riverpod/legacy.dart';
+import 'package:intl/intl.dart';
+import 'package:learnflow_backoffice/dto/teachers_response.dto.dart';
+import 'package:learnflow_backoffice/screens/management/widgets/management_pagination_controls.dart';
 import 'package:learnflow_backoffice/services/api/api_service.dart';
 import 'package:learnflow_backoffice/services/authentication/secure_storage.dart';
-import 'package:pluto_grid/pluto_grid.dart';
 
-final teachersProvider = FutureProvider<List<Teacher>>((ref) async {
+final teachersPageProvider = StateProvider.autoDispose<int>((ref) => 1);
+final teachersPageSizeProvider = StateProvider.autoDispose<int>((ref) => 10);
+final teachersSearchProvider = StateProvider.autoDispose<String>((ref) => '');
+
+final teachersResponseProvider = FutureProvider.autoDispose
+    .family<TeachersResponse, ({int page, int pageSize, String search})>(
+        (ref, params) async {
   final apiToken = await ref.watch(secureStorageProvider).getApiToken();
   final apiService = ref.read(apiServiceProvider(apiToken));
-  final response = await apiService.getTeachers();
-  return response.data ?? <Teacher>[];
+  return apiService.getTeachers(
+    page: params.page,
+    limit: params.pageSize,
+    search: params.search.isEmpty ? null : params.search,
+  );
 });
 
-class TeacherDataTable extends ConsumerStatefulWidget {
+class TeacherDataTable extends ConsumerWidget {
   const TeacherDataTable({super.key});
 
   @override
-  ConsumerState<TeacherDataTable> createState() => _TeacherDataTableState();
-}
-
-class _TeacherDataTableState extends ConsumerState<TeacherDataTable> {
-  late final PlutoGridStateManager stateManager;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<PlutoColumn> columns = <PlutoColumn>[
-      PlutoColumn(
-        title: 'First Name',
-        field: 'firstName',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Last Name',
-        field: 'lastName',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Date of Birth',
-        field: 'birthdate',
-        type: PlutoColumnType.date(),
-      ),
-      PlutoColumn(
-        title: 'Email',
-        field: 'email',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Phone Number',
-        field: 'phoneNumber',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Street',
-        field: 'street',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'City',
-        field: 'city',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Zip Code',
-        field: 'zipCode',
-        type: PlutoColumnType.text(),
-      ),
-      PlutoColumn(
-        title: 'Validation',
-        field: 'isValidated',
-        type: PlutoColumnType.select([true, false, null]),
-      ),
-    ];
-
-    final List<PlutoColumnGroup> columnGroups = [
-      PlutoColumnGroup(title: 'Personal Information', fields: [
-        'firstName',
-        'lastName',
-        "birthdate",
-      ]),
-      PlutoColumnGroup(
-        title: 'Contact',
-        fields: ["email", "phoneNumber"],
-      ),
-      PlutoColumnGroup(
-        title: 'Address',
-        fields: ["street", "city", "zipCode"],
-      ),
-    ];
-
-    return Scaffold(
-      body: Container(
-        padding: const EdgeInsets.all(15),
-        child: ref.watch(teachersProvider).when(
-          data: (teachers) {
-            return PlutoGrid(
-              columns: columns,
-              columnGroups: columnGroups,
-              rows: teachers.map((teacher) {
-                return PlutoRow(
-                  cells: {
-                    '_id': PlutoCell(value: teacher.id ?? ""),
-                    'firstName': PlutoCell(value: teacher.firstName ?? ""),
-                    'lastName': PlutoCell(value: teacher.lastName ?? ""),
-                    'birthdate': PlutoCell(value: teacher.birthdate),
-                    'email': PlutoCell(value: teacher.email ?? ""),
-                    'phoneNumber': PlutoCell(value: teacher.phoneNumber ?? ""),
-                    'street': PlutoCell(value: teacher.address?.street ?? ""),
-                    'city': PlutoCell(value: teacher.address?.city ?? ""),
-                    'zipCode': PlutoCell(value: teacher.address?.zipCode ?? ""),
-                    'isValidated': PlutoCell(value: teacher.isValidated),
-                  },
-                );
-              }).toList(),
-              onLoaded: (PlutoGridOnLoadedEvent event) {
-                stateManager = event.stateManager;
-                stateManager.setShowColumnFilter(true);
-              },
-              onChanged: (PlutoGridOnChangedEvent event) async {
-                try {
-                  final cell =
-                      event.row.cells.map<String, dynamic>((key, cell) {
-                    final json = MapEntry(key, cell.value);
-                    return json;
-                  });
-                  final teacher = Teacher.fromJson(cell);
-                  final apiToken =
-                      await ref.read(secureStorageProvider).getApiToken();
-                  print(teacher.id);
-                  final response = await ref
-                      .read(apiServiceProvider(apiToken))
-                      .updateTeacher(
-                        teacher.id!,
-                        teacher,
-                      );
-                  print(response);
-                  print("Success update");
-                } catch (e) {
-                  // if (!mounted) return;
-                  // ScaffoldMessenger.of(context).showSnackBar(
-                  //   const SnackBar(
-                  //     content: Text("Changes were not saved"),
-                  //   ),
-                  // );
-                }
-              },
-              createHeader: (stateManager) {
-                return _Header(stateManager: stateManager);
-              },
-            );
-          },
-          error: (error, stackTrace) {
-            return const Center(
-              child: Text('Error while loading data'),
-            );
-          },
-          loading: () {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          },
-        ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final page = ref.watch(teachersPageProvider);
+    final pageSize = ref.watch(teachersPageSizeProvider);
+    final search = ref.watch(teachersSearchProvider);
+    final responseAsync = ref.watch(
+      teachersResponseProvider(
+        (page: page, pageSize: pageSize, search: search),
       ),
     );
-  }
-}
 
-class _Header extends ConsumerStatefulWidget {
-  const _Header({
-    required this.stateManager,
-    Key? key,
-  }) : super(key: key);
-  final PlutoGridStateManager stateManager;
+    return responseAsync.when(
+      data: (response) {
+        final teachers = response.data ?? const [];
+        final meta = response.meta;
+        final currentPage = meta?.page ?? page;
+        final totalPages = meta?.totalPages == null || meta!.totalPages! < 1
+            ? 1
+            : meta.totalPages!;
 
-  @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _HeaderState();
-}
-
-class _HeaderState extends ConsumerState<_Header> {
-  int addCount = 1;
-  int addedCount = 0;
-  PlutoGridSelectingMode gridSelectingMode = PlutoGridSelectingMode.row;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      widget.stateManager.setSelectingMode(gridSelectingMode);
-    });
-  }
-
-  void handleAddRows() {
-    final newRows = widget.stateManager.getNewRows(count: addCount);
-    widget.stateManager.appendRows(newRows);
-    widget.stateManager.setCurrentCell(
-      newRows.first.cells.entries.first.value,
-      widget.stateManager.refRows.length - 1,
-    );
-    widget.stateManager.moveScrollByRow(
-      PlutoMoveDirection.down,
-      widget.stateManager.refRows.length - 2,
-    );
-    widget.stateManager.setKeepFocus(true);
-  }
-
-  void handleRemoveCurrentRowButton() async {
-    try {
-      final json = widget.stateManager.currentRow!.cells
-          .map<String, dynamic>((key, cell) {
-        final json = MapEntry(key, cell.value);
-        return json;
-      });
-      final teacher = Teacher.fromJson(json);
-      final apiToken = await ref.read(secureStorageProvider).getApiToken();
-      print(teacher.id);
-      widget.stateManager.removeCurrentRow();
-      final response =
-          await ref.read(apiServiceProvider(apiToken)).deleteTeacher(
-                teacher.id!,
-              );
-      print(response);
-      print("Success update");
-    } catch (e) {
-      print(e);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Changes were not saved"),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Wrap(
-          spacing: 10,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        return Column(
           children: [
-            // ElevatedButton(
-            //   onPressed: handleAddRows,
-            //   child: const Text('Add a student'),
-            // ),
-            ElevatedButton(
-              onPressed: handleRemoveCurrentRowButton,
-              child: const Text("Delete teacher"),
+            Expanded(
+              child: ListView(
+                children: [
+                  DataTable(
+                    columns: const [
+                      DataColumn(label: Text('First Name')),
+                      DataColumn(label: Text('Last Name')),
+                      DataColumn(label: Text('Birthdate')),
+                      DataColumn(label: Text('Email')),
+                      DataColumn(label: Text('Phone')),
+                      DataColumn(label: Text('Validated')),
+                      DataColumn(label: Text('City')),
+                    ],
+                    rows: teachers
+                        .map(
+                          (teacher) => DataRow(
+                            cells: [
+                              DataCell(Text(teacher.firstName ?? '')),
+                              DataCell(Text(teacher.lastName ?? '')),
+                              DataCell(
+                                Text(
+                                  teacher.birthdate == null
+                                      ? ''
+                                      : DateFormat('yyyy-MM-dd')
+                                          .format(teacher.birthdate!.toLocal()),
+                                ),
+                              ),
+                              DataCell(Text(teacher.email ?? '')),
+                              DataCell(Text(teacher.phoneNumber ?? '')),
+                              DataCell(Text((teacher.isValidated ?? false)
+                                  ? 'Yes'
+                                  : 'No')),
+                              DataCell(Text(teacher.address?.city ?? '')),
+                            ],
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+            ManagementPaginationControls(
+              page: currentPage,
+              totalPages: totalPages,
+              totalItems: meta?.total,
+              pageSize: pageSize,
+              searchText: search,
+              onPageSizeChanged: (value) {
+                ref.read(teachersPageSizeProvider.notifier).state = value;
+                ref.read(teachersPageProvider.notifier).state = 1;
+              },
+              onSearchChanged: (value) {
+                ref.read(teachersSearchProvider.notifier).state = value.trim();
+                ref.read(teachersPageProvider.notifier).state = 1;
+              },
+              onPrevious: currentPage > 1
+                  ? () => ref.read(teachersPageProvider.notifier).state =
+                      currentPage - 1
+                  : null,
+              onNext: currentPage < totalPages
+                  ? () => ref.read(teachersPageProvider.notifier).state =
+                      currentPage + 1
+                  : null,
             ),
           ],
-        ),
+        );
+      },
+      error: (error, stackTrace) => const Center(
+        child: Text('Error while loading teachers'),
       ),
+      loading: () => const Center(child: CircularProgressIndicator()),
     );
   }
 }
